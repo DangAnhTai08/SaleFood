@@ -1,0 +1,31 @@
+server:
+  port: 8888
+
+## default connection pool
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 5
+      poolName: saleFood
+      auto-commit: false
+    url: jdbc:postgresql://localhost:5432/sale_food
+    username: chef_fresh
+    password: 123@123a
+  jpa:
+    properties:
+      hiberate:
+        jdbc:
+          lob:
+            non_contextual_creation: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  redis:
+    host: localhost
+    timeout: 60000 # milliSeconds
+    port: 6379
+
+application:
+  token:
+    length: 128
+
