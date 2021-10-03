@@ -12,13 +12,19 @@ import org.springframework.web.bind.annotation.RestController;
 public class TestController {
     @GetMapping("/all")
     public String allAccess() {
-        return "Public Content.";
+        return "home";
     }
 
     @GetMapping("/user")
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
     public String userAccess() {
-        return "User Content.";
+        return "home";
+    }
+
+    @GetMapping("/demo-jsp")
+    @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
+    public String demoJsp() {
+        return "home";
     }
 
     @GetMapping("/mod")
