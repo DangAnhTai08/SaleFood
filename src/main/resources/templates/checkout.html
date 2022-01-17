@@ -898,7 +898,7 @@
         <div class="checkout-left">
             <div class="address_form_agile">
                 <h4>Add a new Details</h4>
-                <form action="payment.html" method="post" class="creditly-card-form agileinfo_form">
+                <form th:action="@{payment}" method="post" class="creditly-card-form agileinfo_form">
                     <div class="creditly-wrapper wthree, w3_agileits_wrapper">
                         <div class="information-wrapper">
                             <div class="first-row">
@@ -937,7 +937,7 @@
                     </div>
                 </form>
                 <div class="checkout-right-basket">
-                    <a href="payment.html">Make a Payment
+                    <a th:href="@{/payment}"> Make a Payment
                         <span class="fa fa-hand-o-right" aria-hidden="true"></span>
                     </a>
                 </div>

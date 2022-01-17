@@ -959,7 +959,12 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 									<div class="col-md-6">
 										<img class="pp-img" th:src="@{/images/paypal.png}" alt="Image Alternative text" title="Image Title">
 										<p>Important: You will be redirected to PayPal's website to securely complete your payment.</p>
-										<a class="btn btn-primary">Checkout via Paypal</a>
+										<form method="post" th:action="@{/pay}" disabled="true">
+											<input type="number" value="100" name="price"/>
+											<button type="submit">
+												<a class="btn btn-primary">Checkout via Paypal</a>
+											</button>
+										</form>
 									</div>
 									<div class="col-md-6 number-paymk">
 										<form class="cc-form">

@@ -24,8 +24,16 @@ spring:
     host: localhost
     timeout: 60000 # milliSeconds
     port: 6379
+  thymeleaf:
+    cache: false
 
 application:
   token:
     length: 128
 
+#Paypal config
+paypal:
+  mode: sandbox
+  client:
+    app: 'ATBF9WeswCLqhddgATQPY1t18LhhcSQ8p469pH1NtTrSAxmu4KXNtfsyj7YiUAPo1U0uwJhKCBUs364_'
+    secret: 'EEaURCS-2SqH3i8FQmxgXpo63jI13ivNW1EIcC-Cg6KmBg8-_GbViNwrYHzh_4tsV_zMAQrfZpMyRagy'
