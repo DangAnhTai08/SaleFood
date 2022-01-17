@@ -36,7 +36,7 @@
         <!-- header-bot-->
         <div class="col-md-4 logo_agile">
             <h1>
-                <a th:href="@{/home}">
+                <a th:href="@{/}">
                     <span>C</span>heF
                     <span>F</span>resh
                     <img th:src="@{/images/logo2.png}" alt=" "/>
@@ -59,7 +59,7 @@
                     <span class="fa fa-phone" aria-hidden="true"></span> 0348596111
                 </li>
                 <li>
-                    <a href="javascript:" data-toggle="modal" data-target="#myModal1" >
+                    <a href="javascript:" data-toggle="modal" data-target="#myModal1">
                         <span class="fa fa-unlock-alt" aria-hidden="true"></span> Sign In </a>
                 </li>
                 <li>
@@ -140,7 +140,8 @@
                             <input id="loginUsername" type="text" placeholder="User Name" name="Name" required="">
                         </div>
                         <div class="styled-input">
-                            <input id="loginPassword" type="password" placeholder="Password" name="password" required="">
+                            <input id="loginPassword" type="password" placeholder="Password" name="password"
+                                   required="">
                         </div>
                         <input id="login" type="submit" value="Sign In">
                     </form>
@@ -1805,6 +1806,20 @@
 </div>
 <!-- //copyright -->
 
+<div id="notice-success" class="modal fade" tabindex="-1" role="dialog">
+    <div class="alert alert-success">Login Successful</div>
+</div>
+<div id="notice-failed" class="modal fade" tabindex="-1" role="dialog">
+    <div class="alert alert-danger">Login Failed</div>
+</div>
+
+<div id="notice-regis-success" class="modal fade" tabindex="-1" role="dialog">
+    <div class="alert alert-success">Registry Successful</div>
+</div>
+<div id="notice-regis-failed" class="modal fade" tabindex="-1" role="dialog">
+    <div class="alert alert-danger">Registry Failed</div>
+</div>
+
 <!-- js-files -->
 <!-- jquery -->
 <script th:src="@{/js/jquery-2.1.4.min.js}"></script>
@@ -1847,7 +1862,7 @@
             const data = {
                 username: $('#iUsername').val(),
                 email: $('#iEmail').val(),
-                phone:$('#iPhonenumber').val(),
+                phone: $('#iPhonenumber').val(),
                 address: $('#iAddress').val(),
                 password: $('#password1').val(),
                 confirmPassword: $('#password2').val()
@@ -1859,20 +1874,44 @@
                 contentType: "application/json",
                 dataType: 'json',
                 success(res) {
-                    $("#tokenQr").attr("src", "https://zxing.org/w/chart?cht=qr&chs=250x250&chld=M&choe=UTF-8&chl=otpauth://totp/2FaExample.com?secret=" + res.message + "&issuer=2FaExample");
+                    $("#tokenQr").attr("src", "https://zxing.org/w/chart?cht=qr&chs=250x250&chld=" +
+                        "M&choe=UTF-8&chl=otpauth://totp/cheffresh-" + $('#iEmail').val() +
+                        "?secret=" + res.message + "&issuer=" + $('#iUsername').val());
+
                     $("#tokenValue").text(res.message);
+
                     $("#modalRegister").modal('show');
+
+                    // call api login
                     login($('#iUsername').val(), $('#password1').val());
+
+                    // notice
+                    $("#notice-regis-success").modal('show');
+                    setTimeout(() => {
+                        $("#notice-success").modal('hide');
+                    }, 2000)
                 },
                 error() {
-                    console.log('fail roi');
+                    $("#notice-regis-failed").modal('show');
+                    setTimeout(() => {
+                        $("#notice-success").modal('hide');
+                    }, 2000)
                 }
             })
         });
         $('#login').click((e) => {
             e.preventDefault();
             login($('#loginUsername').val(), $('#loginPassword').val());
-            console.log('vao login r ')
+            $("#notice-success").modal('show');
+            setTimeout(() => {
+                $("#notice-success").modal('hide');
+            }, 2000)
+        });
+        $('#modalRegister').click((e) => {
+            e.preventDefault();
+            setTimeout(() => {
+                $("#myModal2").modal('hide');
+            }, 200)
         })
     });
 
