@@ -9,16 +9,15 @@ import javax.persistence.*;
 
 @Data
 @Entity
-@Table(name = "sale_roles")
+@Table(name = "users_roles")
 @AllArgsConstructor
 @NoArgsConstructor
-public class Role {
+public class UserRole {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "role_id")
     private Integer roleId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 20)
-    private ERole name;
+    @Column(name = "user_id")
+    private Integer userId;
 }

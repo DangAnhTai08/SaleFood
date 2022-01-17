@@ -59,7 +59,7 @@
                     <span class="fa fa-phone" aria-hidden="true"></span> 0348596111
                 </li>
                 <li>
-                    <a href="#" data-toggle="modal" data-target="#myModal1">
+                    <a href="javascript:" data-toggle="modal" data-target="#myModal1" >
                         <span class="fa fa-unlock-alt" aria-hidden="true"></span> Sign In </a>
                 </li>
                 <li>
@@ -135,14 +135,14 @@
                         <a href="#" data-toggle="modal" data-target="#myModal2">
                             Sign Up Now</a>
                     </p>
-                    <form action="#" method="post">
+                    <form>
                         <div class="styled-input agile-styled-input-top">
-                            <input type="text" placeholder="User Name" name="Name" required="">
+                            <input id="loginUsername" type="text" placeholder="User Name" name="Name" required="">
                         </div>
                         <div class="styled-input">
-                            <input type="password" placeholder="Password" name="password" required="">
+                            <input id="loginPassword" type="password" placeholder="Password" name="password" required="">
                         </div>
-                        <input type="submit" value="Sign In">
+                        <input id="login" type="submit" value="Sign In">
                     </form>
                     <div class="clearfix"></div>
                 </div>
@@ -172,21 +172,27 @@
                     <p>
                         Come join the CheF Fresh! Let's set up your Account.
                     </p>
-                    <form action="#" method="post">
+                    <form th:action="@{/singup}">
                         <div class="styled-input agile-styled-input-top">
-                            <input type="text" placeholder="Name" name="Name" required="">
+                            <input id="iUsername" type="text" placeholder="Name" name="username" required="">
                         </div>
                         <div class="styled-input">
-                            <input type="email" placeholder="E-mail" name="Email" required="">
+                            <input id="iEmail" type="email" placeholder="E-mail" name="email" required="">
+                        </div>
+                        <div class="styled-input">
+                            <input id="iPhonenumber" type="text" placeholder="Phone" name="phone" required="">
+                        </div>
+                        <div class="styled-input">
+                            <input id="iAddress" type="text" placeholder="Address" name="address" required="">
                         </div>
                         <div class="styled-input">
                             <input type="password" placeholder="Password" name="password" id="password1" required="">
                         </div>
                         <div class="styled-input">
-                            <input type="password" placeholder="Confirm Password" name="Confirm Password" id="password2"
+                            <input type="password" placeholder="Confirm Password" name="confirmPassword" id="password2"
                                    required="">
                         </div>
-                        <input type="submit" value="Sign Up">
+                        <button id="signUp">Sign Up</button>
                     </form>
                     <p>
                         <a href="#">By clicking register, I agree to your terms</a>
@@ -195,6 +201,32 @@
             </div>
         </div>
         <!-- //Modal content-->
+    </div>
+</div>
+<div id="modalRegister" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Configure your token</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    To complete registration you should configure your token in Google Authenticator application. You
+                    will need this token further to be able to log in.
+                </p>
+                <p>Scan the QR-code displayed below or enter token manually.</p>
+                <div class="text-center">
+                    <img id="tokenQr" src="" class="img-thumbnail"/>
+                    <h3><span id="tokenValue"></span></h3>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btnRegisterDone" type="button" class="btn btn-primary" data-dismiss="modal">Done</button>
+            </div>
+        </div>
     </div>
 </div>
 <!-- //Modal2 -->
@@ -1782,6 +1814,23 @@
 <script th:src="@{/js/jquery.magnific-popup.js}"></script>
 <script>
     $(document).ready(function () {
+        const login = (username, password) => {
+            $.ajax({
+                type: 'POST',
+                data: JSON.stringify({
+                    username: username,
+                    password: password
+                }),
+                url: 'http://localhost:8888/api/auth/login',
+                contentType: "application/json",
+                dataType: 'json',
+                success(res) {
+                    localStorage.setItem('token', res.type + ' ' + res.token);
+                    localStorage.setItem('current_username', username);
+                    $("#myModal1").modal('hide');
+                },
+            })
+        }
         $('.popup-with-zoom-anim').magnificPopup({
             type: 'inline',
             fixedContentPos: false,
@@ -1793,8 +1842,40 @@
             removalDelay: 300,
             mainClass: 'my-mfp-zoom-in'
         });
-
+        $('#signUp').click((e) => {
+            e.preventDefault();
+            const data = {
+                username: $('#iUsername').val(),
+                email: $('#iEmail').val(),
+                phone:$('#iPhonenumber').val(),
+                address: $('#iAddress').val(),
+                password: $('#password1').val(),
+                confirmPassword: $('#password2').val()
+            }
+            $.ajax({
+                type: 'POST',
+                data: JSON.stringify(data),
+                url: 'http://localhost:8888/api/auth/signup',
+                contentType: "application/json",
+                dataType: 'json',
+                success(res) {
+                    $("#tokenQr").attr("src", "https://zxing.org/w/chart?cht=qr&chs=250x250&chld=M&choe=UTF-8&chl=otpauth://totp/2FaExample.com?secret=" + res.message + "&issuer=2FaExample");
+                    $("#tokenValue").text(res.message);
+                    $("#modalRegister").modal('show');
+                    login($('#iUsername').val(), $('#password1').val());
+                },
+                error() {
+                    console.log('fail roi');
+                }
+            })
+        });
+        $('#login').click((e) => {
+            e.preventDefault();
+            login($('#loginUsername').val(), $('#loginPassword').val());
+            console.log('vao login r ')
+        })
     });
+
 </script>
 <!-- Large modal -->
 <!-- <script>
@@ -1932,6 +2013,7 @@
         });
 
     });
+
 </script>
 <!-- //smooth-scrolling-of-move-up -->
 
