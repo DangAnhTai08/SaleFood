@@ -1815,7 +1815,7 @@ Cart.prototype.total = function total(config) {
 
     config = config || {};
     config.currency = this.settings('currency_code');
-
+    localStorage.setItem('totalPrice', result);
     return currency(result, config);
 };
 

@@ -782,6 +782,7 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 			</div>
 		</div>
 	</div>
+
 	<!-- //page -->
 	<!-- payment page-->
 	<div class="privacy">
@@ -860,47 +861,8 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 						</div>
 						<div>
 							<div class="vertical_post">
-								<form action="#" method="post">
-									<h5>Select From Popular Banks</h5>
-									<div class="swit-radio">
-										<div class="check_box_one">
-											<div class="radio_one">
-												<label>
-													<input type="radio" name="radio" checked="">
-													<i></i>Syndicate Bank</label>
-											</div>
-										</div>
-										<div class="check_box_one">
-											<div class="radio_one">
-												<label>
-													<input type="radio" name="radio">
-													<i></i>Bank of Baroda</label>
-											</div>
-										</div>
-										<div class="check_box_one">
-											<div class="radio_one">
-												<label>
-													<input type="radio" name="radio">
-													<i></i>Canara Bank</label>
-											</div>
-										</div>
-										<div class="check_box_one">
-											<div class="radio_one">
-												<label>
-													<input type="radio" name="radio">
-													<i></i>ICICI Bank</label>
-											</div>
-										</div>
-										<div class="check_box_one">
-											<div class="radio_one">
-												<label>
-													<input type="radio" name="radio">
-													<i></i>State Bank Of India</label>
-											</div>
-										</div>
-										<div class="clearfix"></div>
-									</div>
-									<h5>Or Select Other Bank</h5>
+								<div>
+									<span><h5>Total Price: </h5><h5 totalPrice></h5></span>
 									<div class="section_room_pay">
 										<select class="year">
 											<option value="">=== Other Banks ===</option>
@@ -949,8 +911,8 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 											<option value="VJB-NA">Vijaya Bank NetBanking</option>
 										</select>
 									</div>
-									<input type="submit" value="PAY NOW">
-								</form>
+									<button id="payment">PAY NOW</button>
+								</div>
 							</div>
 						</div>
 						<div>
@@ -1367,6 +1329,40 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 			</p>
 		</div>
 	</div>
+	<div id="modalLoginCheckToken" class="modal fade" tabindex="-1" role="dialog">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Verify your token</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+					<div id="msgTokenCheckFailed" class="alert alert-danger collapse" role="alert">
+						Provided token could not be recognized
+					</div>
+					<p>
+						To complete login you should verify your token generated in Google Authenticator application.
+						Please, enter the currently generated token to the field below
+					</p>
+					<div class="text-center">
+						<input id="authToken" type="text" placeholder="Enter token">
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button id="btnTokenVerify" type="button" class="btn btn-primary">Verify</button>
+					<button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div id="notice-success" class="modal fade" tabindex="-1" role="dialog">
+		<div class="alert alert-success">Pay Successful</div>
+	</div>
+	<div id="notice-failed" class="modal fade" tabindex="-1" role="dialog">
+		<div class="alert alert-danger">Pay Failed</div>
+	</div>
 	<!-- //copyright -->
 
 	<!-- js-files -->
@@ -1377,6 +1373,7 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 	<!-- popup modal (for signin & signup)-->
 	<script th:src="@{/js/jquery.magnific-popup.js}"></script>
 	<script>
+		//!jq
 		$(document).ready(function () {
 			$('.popup-with-zoom-anim').magnificPopup({
 				type: 'inline',
@@ -1389,7 +1386,50 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 				removalDelay: 300,
 				mainClass: 'my-mfp-zoom-in'
 			});
+			$('[totalPrice]').text(localStorage.getItem('totalPrice'));
+			$('#payment').click((e) => {
+				e.preventDefault();
 
+				$("#modalLoginCheckToken").modal('show');
+
+				$('#btnTokenVerify').click((e) => {
+					e.preventDefault();
+					$.ajax({
+						type: 'POST',
+						data: JSON.stringify({
+							login: localStorage.getItem('current_username'),
+							totp: $('#authToken').val(),
+							token: localStorage.getItem('token'),
+							price: localStorage.getItem('totalPrice')
+						}),
+						headers: {
+							Authorization: localStorage.getItem('token'),
+						},
+						url: 'http://localhost:8888/api/auth/verify-otp',
+						contentType: "application/json",
+						dataType: 'json',
+						success(res) {
+							if(res.message) {
+								localStorage.setItem('totalPrice', '0');
+								$("#modalLoginCheckToken").modal('hide');
+								$("#notice-success").modal('show');
+								setTimeout(() => {
+									$("#notice-success").modal('hide');
+								}, 2000)
+								setTimeout(() => {
+									window.location.replace('http://localhost:8888');
+								}, 500)
+							}
+						},
+						error() {
+							$("#notice-failed").modal('show');
+							setTimeout(() => {
+								$("#notice-failed").modal('hide');
+							}, 3000)
+						}
+					})
+				})
+			})
 		});
 	</script>
 	<!-- Large modal -->

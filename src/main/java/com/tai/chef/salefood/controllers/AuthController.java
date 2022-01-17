@@ -5,15 +5,18 @@ import com.tai.chef.salefood.models.ERole;
 import com.tai.chef.salefood.models.Role;
 import com.tai.chef.salefood.models.User;
 import com.tai.chef.salefood.payload.request.LoginRequest;
+import com.tai.chef.salefood.payload.request.OTPRequest;
 import com.tai.chef.salefood.payload.request.SignupRequest;
 import com.tai.chef.salefood.payload.response.AuthResponse;
 import com.tai.chef.salefood.payload.response.MessageResponse;
-import com.tai.chef.salefood.repository.RoleRepository;
 import com.tai.chef.salefood.repository.UserRepository;
 import com.tai.chef.salefood.security.services.UserDetailsImpl;
 import com.tai.chef.salefood.security.token.TokenProvider;
+import com.tai.chef.salefood.service.TotpService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.Base32;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -36,13 +40,15 @@ import java.util.stream.Collectors;
 @Slf4j
 public class AuthController {
 
+    private static final int SECRET_SIZE = 10;
+
     private final AuthenticationManager authenticationManager;
 
     private final UserRepository userRepository;
 
-    private final RoleRepository roleRepository;
-
     private final PasswordEncoder encoder;
+
+    private final TotpService totpService;
 
     private final TokenProvider tokenProvider;
 
@@ -69,56 +75,56 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@RequestBody SignupRequest signUpRequest) {
-        if (userRepository.existsByUsername(signUpRequest.getUsername())) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(new MessageResponse("Error: Username is already taken!"));
+        try {
+            if (userRepository.existsByUsername(signUpRequest.getUsername()))
+                return ResponseEntity
+                        .badRequest()
+                        .body(new MessageResponse("Error: Username is already taken!"));
+
+            if (userRepository.existsByEmail(signUpRequest.getEmail()))
+                return ResponseEntity
+                        .badRequest()
+                        .body(new MessageResponse("Error: Email is already in use!"));
+
+            // Create new user's account
+            User user = new User(signUpRequest.getUsername(),
+                    signUpRequest.getEmail(),
+                    encoder.encode(signUpRequest.getPassword()));
+            Set<Role> roles = new HashSet<>();
+            roles.add(new Role(1, ERole.ROLE_USER));
+            user.setRoles(roles);
+            user.setPhone(signUpRequest.getPhone());
+            user.setAddress(signUpRequest.getAddress());
+            user.setUserSecret(RandomStringUtils.random(SECRET_SIZE, true, true).toUpperCase());
+            String encodedSecret = new Base32().encodeToString(user.getUserSecret().getBytes());
+
+            userRepository.save(user);
+
+            // This Base32 encode may usually return a string with padding characters - '='.
+            // QR generator which is user (zxing) does not recognize strings containing symbols other than alphanumeric
+            // So just remove these redundant '=' padding symbols from resulting string
+            return ResponseEntity.ok(new MessageResponse(
+                    encodedSecret.replace("=", ""),
+                    user.getUsername()));
+
+        } catch (Exception ex) {
+            log.error("FAILED while singup ", ex);
+            return ResponseEntity.internalServerError().body(new MessageResponse("User registered failed!"));
         }
+    }
 
-        if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(new MessageResponse("Error: Email is already in use!"));
+    @RequestMapping("/verify-otp")
+    public ResponseEntity<?> tokenCheck(@RequestBody OTPRequest otpRequest) {
+        try {
+            Optional<User> user = userRepository.findByUsername(otpRequest.getLogin());
+
+            if (!totpService.verifyCode(otpRequest.getTotp(), user.get().getUserSecret()))
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("UNAUTHORIZED");
+
+            return ResponseEntity.ok().body(new MessageResponse("Pay success"));
+        } catch (Exception ex) {
+            log.error("verify totp failed", ex);
+            return ResponseEntity.internalServerError().body("pay error");
         }
-
-        // Create new user's account
-        User user = new User(signUpRequest.getUsername(),
-                signUpRequest.getEmail(),
-                encoder.encode(signUpRequest.getPassword()));
-
-        Set<String> strRoles = signUpRequest.getRole();
-        Set<Role> roles = new HashSet<>();
-
-        if (strRoles == null) {
-            Role userRole = roleRepository.findByName(ERole.ROLE_USER)
-                    .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-            roles.add(userRole);
-        } else {
-            strRoles.forEach(role -> {
-                switch (role) {
-                    case "admin":
-                        Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                        roles.add(adminRole);
-
-                        break;
-                    case "mod":
-                        Role modRole = roleRepository.findByName(ERole.ROLE_MODERATOR)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                        roles.add(modRole);
-
-                        break;
-                    default:
-                        Role userRole = roleRepository.findByName(ERole.ROLE_USER)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                        roles.add(userRole);
-                }
-            });
-        }
-
-        user.setRoles(roles);
-        userRepository.save(user);
-
-        return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
     }
 }

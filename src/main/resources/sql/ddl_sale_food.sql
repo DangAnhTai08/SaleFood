@@ -24,10 +24,11 @@ create table sale_product(
 
 CREATE TABLE public.sale_user (
     user_id int4 NOT NULL GENERATED ALWAYS AS IDENTITY,
-    user_name varchar(100) NOT NULL,
-    user_email varchar(50) NOT NULL,
-    user_phone varchar(15) NOT NULL,
-    user_address varchar(500) NOT NULL,
+    user_name varchar NOT NULL,
+    user_email varchar NOT NULL,
+    user_phone varchar,
+    user_address varchar,
+    user_secret varchar,
     user_password varchar(50) NOT NULL,
     user_created timestamp NOT NULL DEFAULT now(),
     user_last_login timestamp NOT NULL DEFAULT now(),
@@ -62,4 +63,17 @@ CREATE TABLE sale_order (
     CONSTRAINT sale_order_pkey PRIMARY KEY (order_id),
     CONSTRAINT fk_product_id FOREIGN KEY (product_id) REFERENCES sale_product(product_id),
     CONSTRAINT fk_tran_id FOREIGN KEY (tran_id) REFERENCES sale_transaction(tran_id)
+);
+
+CREATE TABLE sale_roles (
+    role_id int4 NOT NULL GENERATED ALWAYS AS IDENTITY,
+    name varchar default 'ROLE_USER',
+    CONSTRAINT sale_roles_pkey PRIMARY KEY (role_id)
+);
+
+CREATE TABLE users_roles (
+     user_id int4 NOT NULL,
+     role_id int4 NOT NULL,
+     CONSTRAINT fk_users_roles FOREIGN KEY (user_id) REFERENCES sale_user(user_id),
+     CONSTRAINT fk_roles FOREIGN KEY (role_id) REFERENCES sale_roles(role_id)
 );

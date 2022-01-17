@@ -812,6 +812,10 @@
                         <th>Remove</th>
                     </tr>
                     </thead>
+                    <tfoot>
+                    <tr>Tong</tr>
+                    <tr th:colspan="5" id="totalPrice"></tr>
+                    </tfoot>
                     <tbody>
                     <tr class="rem1">
                         <td class="invert">1</td>
@@ -825,7 +829,7 @@
                                 <div class="quantity-select">
                                     <div class="entry value-minus">&nbsp;</div>
                                     <div class="entry value">
-                                        <span>1</span>
+                                        <span id="i1">1</span>
                                     </div>
                                     <div class="entry value-plus active">&nbsp;</div>
                                 </div>
@@ -851,7 +855,7 @@
                                 <div class="quantity-select">
                                     <div class="entry value-minus">&nbsp;</div>
                                     <div class="entry value">
-                                        <span>1</span>
+                                        <span id="i2">1</span>
                                     </div>
                                     <div class="entry value-plus active">&nbsp;</div>
                                 </div>
@@ -877,7 +881,7 @@
                                 <div class="quantity-select">
                                     <div class="entry value-minus">&nbsp;</div>
                                     <div class="entry value">
-                                        <span>1</span>
+                                        <span id="i3">1</span>
                                     </div>
                                     <div class="entry value-plus active">&nbsp;</div>
                                 </div>
@@ -898,7 +902,7 @@
         <div class="checkout-left">
             <div class="address_form_agile">
                 <h4>Add a new Details</h4>
-                <form action="payment.html" method="post" class="creditly-card-form agileinfo_form">
+                <form th:action="@{/payment}" method="post" class="creditly-card-form agileinfo_form">
                     <div class="creditly-wrapper wthree, w3_agileits_wrapper">
                         <div class="information-wrapper">
                             <div class="first-row">
@@ -937,7 +941,7 @@
                     </div>
                 </form>
                 <div class="checkout-right-basket">
-                    <a href="payment.html">Make a Payment
+                    <a th:href="@{/payment}">Make a Payment
                         <span class="fa fa-hand-o-right" aria-hidden="true"></span>
                     </a>
                 </div>
@@ -1378,16 +1382,22 @@
 
 <!--quantity-->
 <script>
+    const total = $('#totalPrice');
+    total.text(`${888 + 121.6 + 180}`);
     $('.value-plus').on('click', function () {
         var divUpd = $(this).parent().find('.value'),
             newVal = parseInt(divUpd.text(), 10) + 1;
         divUpd.text(newVal);
+        const sum = $('#i1').text();
+        console.log(sum);
     });
 
     $('.value-minus').on('click', function () {
         var divUpd = $(this).parent().find('.value'),
             newVal = parseInt(divUpd.text(), 10) - 1;
         if (newVal >= 1) divUpd.text(newVal);
+        const sum = $('#i1').text();
+        console.log(sum);
     });
 </script>
 <!--quantity-->
