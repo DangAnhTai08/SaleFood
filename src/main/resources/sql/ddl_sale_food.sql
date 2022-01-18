@@ -78,3 +78,13 @@ CREATE TABLE users_roles (
      CONSTRAINT fk_users_roles FOREIGN KEY (user_id) REFERENCES sale_user(user_id),
      CONSTRAINT fk_roles FOREIGN KEY (role_id) REFERENCES sale_roles(role_id)
 );
+
+INSERT INTO public.sale_roles
+(role_id, "name")
+VALUES(1, 'ROLE_USER');
+INSERT INTO public.sale_roles
+(role_id, "name")
+VALUES(2, 'ROLE_MODERATOR');
+INSERT INTO public.sale_roles
+(role_id, "name")
+VALUES(3, 'ROLE_ADMIN');
