@@ -6,6 +6,7 @@ import javax.persistence.*;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -42,6 +43,9 @@ public class User {
     @NotBlank
     @Column(name = "user_password")
     private String password;
+
+    @Column(name = "user_balance")
+    private BigDecimal balance;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "users_roles",

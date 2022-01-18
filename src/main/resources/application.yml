@@ -22,7 +22,7 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
   redis:
     host: localhost
-    timeout: 60000 # milliSeconds
+    timeout: 120000 # milliSeconds
     port: 6379
 
 application:

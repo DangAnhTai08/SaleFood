@@ -61,8 +61,17 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                 .authorizeRequests()
                 .antMatchers("/css/**", "/fonts/**", "/images/**", "/js/**").permitAll()
-                .antMatchers("/*").permitAll()
-                .antMatchers("/singup", "/verify-otp").authenticated();
+                .antMatchers("/home").permitAll()
+                .antMatchers("/css/*").permitAll()
+                .antMatchers("/js/*").permitAll()
+                .antMatchers("/fonts/*").permitAll()
+                .antMatchers("/images/*").permitAll()
+                .antMatchers("/").permitAll()
+                .antMatchers("/checkout").permitAll()
+                .antMatchers("/payment").permitAll()
+                .antMatchers("/api/auth/signup").permitAll()
+                .antMatchers("/api/auth/login").permitAll()
+                .anyRequest().authenticated();
 
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
     }

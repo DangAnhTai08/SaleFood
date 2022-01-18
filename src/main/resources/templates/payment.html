@@ -968,7 +968,7 @@ License URL: http://creativecommons.org/licenses/by/3.0/
     </div>
 </div>
 <div id="notice-success" class="modal fade" tabindex="-1" role="dialog">
-    <div class="alert alert-success">Pay Successful</div>
+    <div class="alert alert-success">Pay Successful, Order done</div>
 </div>
 <div id="notice-failed" class="modal fade" tabindex="-1" role="dialog">
     <div class="alert alert-danger">Pay Failed</div>
@@ -1025,10 +1025,10 @@ License URL: http://creativecommons.org/licenses/by/3.0/
                             $("#notice-success").modal('show');
                             setTimeout(() => {
                                 $("#notice-success").modal('hide');
-                            }, 2000)
+                            }, 3000)
                             setTimeout(() => {
                                 window.location.replace('http://localhost:8888');
-                            }, 500)
+                            }, 4000)
                         }
                     },
                     error() {

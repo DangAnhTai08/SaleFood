@@ -30,6 +30,7 @@ CREATE TABLE public.sale_user (
     user_address varchar,
     user_secret varchar,
     user_password varchar(50) NOT NULL,
+    user_balance decimal(20,4) default 50000,
     user_created timestamp NOT NULL DEFAULT now(),
     user_last_login timestamp NOT NULL DEFAULT now(),
     CONSTRAINT sale_user_pkey PRIMARY KEY (user_id)

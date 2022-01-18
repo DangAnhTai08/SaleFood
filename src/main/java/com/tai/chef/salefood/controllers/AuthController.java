@@ -27,10 +27,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import javax.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -96,6 +95,7 @@ public class AuthController {
             user.setPhone(signUpRequest.getPhone());
             user.setAddress(signUpRequest.getAddress());
             user.setUserSecret(RandomStringUtils.random(SECRET_SIZE, true, true).toUpperCase());
+            user.setBalance(new BigDecimal(50000));
             String encodedSecret = new Base32().encodeToString(user.getUserSecret().getBytes());
 
             userRepository.save(user);
@@ -108,18 +108,35 @@ public class AuthController {
                     user.getUsername()));
 
         } catch (Exception ex) {
-            log.error("FAILED while singup ", ex);
+            log.error("FAILED while signup ", ex);
             return ResponseEntity.internalServerError().body(new MessageResponse("User registered failed!"));
         }
     }
 
     @RequestMapping("/verify-otp")
-    public ResponseEntity<?> tokenCheck(@RequestBody OTPRequest otpRequest) {
+    public ResponseEntity<?> tokenCheck(@RequestBody OTPRequest otpRequest, HttpServletRequest request) {
         try {
-            Optional<User> user = userRepository.findByUsername(otpRequest.getLogin());
+            String token = tokenProvider.resolveToken(request);
+            String username = tokenProvider.getUsernameFromToken(token);
+            User user = userRepository.findByUsername(username).orElse(null);
+            if (Objects.isNull(user))
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new MessageResponse("UNAUTHORIZED"));
 
-            if (!totpService.verifyCode(otpRequest.getTotp(), user.get().getUserSecret()))
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("UNAUTHORIZED");
+            // check otp verified in time
+            if (tokenProvider.isTOTPRedis(otpRequest.getTotp(), username))
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new MessageResponse("TOTP is verified"));
+
+            if (!totpService.verifyCode(otpRequest.getTotp(), user.getUserSecret()))
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new MessageResponse("UNAUTHORIZED"));
+
+            // save otp to redis
+            tokenProvider.saveTOTPRedis(otpRequest.getTotp(), username);
+
+            // update balance of user
+            BigDecimal price = Objects.isNull(otpRequest.getPrice()) ?
+                    BigDecimal.ZERO : BigDecimal.valueOf(otpRequest.getPrice());
+            user.setBalance(user.getBalance().subtract(price));
+            userRepository.save(user);
 
             return ResponseEntity.ok().body(new MessageResponse("Pay success"));
         } catch (Exception ex) {
