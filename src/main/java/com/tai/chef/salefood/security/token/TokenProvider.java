@@ -80,4 +80,24 @@ public class TokenProvider {
         bearerToken = request.getParameter(TOKEN_PARAM);
         return StringUtils.isNotBlank(bearerToken) ? bearerToken : StringUtils.EMPTY;
     }
+
+    public void saveTOTPRedis(String otp, String username) {
+        try {
+            redisTemplate.opsForValue().set("OTP_" + username, otp, 30, TimeUnit.SECONDS);
+        } catch (Exception ex) {
+            log.error("FAILED while saveTOTPRedis for username = {}", username, ex);
+        }
+    }
+
+    public boolean isTOTPRedis(String otp, String username) {
+        try {
+            String totpRedis = redisTemplate.opsForValue()
+                    .get("OTP_" + (Objects.isNull(username) ? StringUtils.EMPTY :username));
+
+            return StringUtils.isNotBlank(totpRedis) && totpRedis.equals(otp);
+        } catch (Exception ex) {
+            log.error("FAILED while isTOTPRedis for username = {}", username, ex);
+            return false;
+        }
+    }
 }
