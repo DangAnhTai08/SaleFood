@@ -158,6 +158,7 @@ public class TOTP {
         byte[] hash = hmac_sha(crypto, k, msg);
 
         // put selected bytes into result int
+        // take the 4 least significant bits from the encrypted string as an offset
         int offset = hash[hash.length - 1] & 0xf;
 
         int binary =
@@ -166,6 +167,7 @@ public class TOTP {
                         ((hash[offset + 2] & 0xff) << 8) |
                         (hash[offset + 3] & 0xff);
 
+        // the otp is then the last 6 digits in the number
         int otp = binary % DIGITS_POWER[codeDigits];
 
         String result = Integer.toString(otp);
