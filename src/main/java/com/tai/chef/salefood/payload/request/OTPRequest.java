@@ -10,9 +10,6 @@ public class OTPRequest {
     private String totp;
 
     @NotBlank
-    private String login;
-
-    @NotBlank
     private String token;
 
     @NotBlank

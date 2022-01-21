@@ -2,17 +2,16 @@ package com.tai.chef.salefood.payload.request;
 
 import lombok.Data;
 
-import javax.validation.constraints.*;
+import javax.validation.constraints.Email;
+import javax.validation.constraints.NotBlank;
 import java.util.Set;
 
 @Data
 public class SignupRequest {
     @NotBlank
-    @Size(min = 3, max = 20)
     private String username;
 
     @NotBlank
-    @Size(max = 50)
     @Email
     private String email;
 
@@ -27,10 +26,8 @@ public class SignupRequest {
     private Set<String> role;
 
     @NotBlank
-    @Size(min = 6, max = 40)
     private String password;
 
     @NotBlank
-    @Size(min = 6, max = 40)
     private String confirmPassword;
 }

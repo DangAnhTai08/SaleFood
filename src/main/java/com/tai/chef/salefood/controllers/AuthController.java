@@ -17,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -29,8 +28,14 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.tai.chef.salefood.constant.Constant.IS_ERROR;
+import static com.tai.chef.salefood.constant.Constant.NON_ERROR;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -63,27 +68,23 @@ public class AuthController {
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         boolean saveTokenRedis = tokenProvider.saveTokenRedis(token, userDetails);
         if (!saveTokenRedis)
-            ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(HttpStatus.UNAUTHORIZED);
-
+            ResponseEntity.ok().body(new MessageResponse("UNAUTHORIZED", IS_ERROR));
+        ;
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
 
-        return ResponseEntity.ok(new AuthResponse(token, userDetails, roles));
+        return ResponseEntity.ok(new AuthResponse(token, userDetails, roles, NON_ERROR));
     }
 
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@RequestBody SignupRequest signUpRequest) {
         try {
             if (userRepository.existsByUsername(signUpRequest.getUsername()))
-                return ResponseEntity
-                        .badRequest()
-                        .body(new MessageResponse("Error: Username is already taken!"));
+                return ResponseEntity.ok().body(new MessageResponse("Username is already taken!", IS_ERROR));
 
             if (userRepository.existsByEmail(signUpRequest.getEmail()))
-                return ResponseEntity
-                        .badRequest()
-                        .body(new MessageResponse("Error: Email is already in use!"));
+                return ResponseEntity.ok().body(new MessageResponse("Email is already in use!", IS_ERROR));
 
             // Create new user's account
             User user = new User(signUpRequest.getUsername(),
@@ -95,21 +96,23 @@ public class AuthController {
             user.setPhone(signUpRequest.getPhone());
             user.setAddress(signUpRequest.getAddress());
             user.setUserSecret(RandomStringUtils.random(SECRET_SIZE, true, true).toUpperCase());
-            user.setBalance(new BigDecimal(50000));
-            String encodedSecret = new Base32().encodeToString(user.getUserSecret().getBytes());
+            user.setBalance(new BigDecimal(50000)); // default balance is 50K
+            user.setUserLocked(false);
 
             userRepository.save(user);
 
+            String encodedSecret = new Base32().encodeToString(user.getUserSecret().getBytes());
             // This Base32 encode may usually return a string with padding characters - '='.
             // QR generator which is user (zxing) does not recognize strings containing symbols other than alphanumeric
             // So just remove these redundant '=' padding symbols from resulting string
             return ResponseEntity.ok(new MessageResponse(
                     encodedSecret.replace("=", ""),
-                    user.getUsername()));
+                    user.getUsername(),
+                    NON_ERROR));
 
         } catch (Exception ex) {
             log.error("FAILED while signup ", ex);
-            return ResponseEntity.internalServerError().body(new MessageResponse("User registered failed!"));
+            return ResponseEntity.ok().body(new MessageResponse("User registered failed!", IS_ERROR));
         }
     }
 
@@ -120,28 +123,46 @@ public class AuthController {
             String username = tokenProvider.getUsernameFromToken(token);
             User user = userRepository.findByUsername(username).orElse(null);
             if (Objects.isNull(user))
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new MessageResponse("UNAUTHORIZED"));
+                return ResponseEntity.ok().body(new MessageResponse("Token is expired", IS_ERROR));
 
-            // check otp verified in time
+            if (user.getUserLocked())
+                return ResponseEntity.ok().body(new MessageResponse("User was locked", IS_ERROR));
+
+            // check otp verified correct in time (30s)
             if (tokenProvider.isTOTPRedis(otpRequest.getTotp(), username))
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new MessageResponse("TOTP is verified"));
+                return ResponseEntity.ok().body(new MessageResponse("OTP was used!", IS_ERROR));
 
-            if (!totpService.verifyCode(otpRequest.getTotp(), user.getUserSecret()))
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new MessageResponse("UNAUTHORIZED"));
+            if (!totpService.verifyCode(otpRequest.getTotp(), user.getUserSecret())) {
+                // save to redis number of user input OTP not correct
+                tokenProvider.saveNumberInputOTP(otpRequest.getTotp(), username);
+                // if > 5 time ===> lock account payment
+                if (tokenProvider.isNumberInputOTP(username)) {
+                    user.setUserLocked(true);
+                    userRepository.save(user);
+                }
+                return ResponseEntity.ok().body(new MessageResponse("OTP is not correct!", IS_ERROR));
+            }
 
-            // save otp to redis
+            // verify OTP success ==> save otp success to redis (One time of OTP)
             tokenProvider.saveTOTPRedis(otpRequest.getTotp(), username);
 
             // update balance of user
             BigDecimal price = Objects.isNull(otpRequest.getPrice()) ?
                     BigDecimal.ZERO : BigDecimal.valueOf(otpRequest.getPrice());
+
+            if (user.getBalance().compareTo(price) < 0) {
+                log.info("Balance of user = {} not enough", username);
+                return ResponseEntity.ok().body(new MessageResponse("Balance of user not enough", IS_ERROR));
+            }
             user.setBalance(user.getBalance().subtract(price));
             userRepository.save(user);
 
-            return ResponseEntity.ok().body(new MessageResponse("Pay success"));
+            return ResponseEntity.ok()
+                    .body(new MessageResponse("Pay success.Your order is processing ...", NON_ERROR));
         } catch (Exception ex) {
-            log.error("verify totp failed", ex);
-            return ResponseEntity.internalServerError().body("pay error");
+            log.error("verify otp failed", ex);
+            return ResponseEntity.internalServerError()
+                    .body(new MessageResponse("pay error", IS_ERROR));
         }
     }
 }
