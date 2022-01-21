@@ -92,12 +92,38 @@ public class TokenProvider {
     public boolean isTOTPRedis(String otp, String username) {
         try {
             String totpRedis = redisTemplate.opsForValue()
-                    .get("OTP_" + (Objects.isNull(username) ? StringUtils.EMPTY :username));
+                    .get("OTP_" + (Objects.isNull(username) ? StringUtils.EMPTY : username));
 
             return StringUtils.isNotBlank(totpRedis) && totpRedis.equals(otp);
         } catch (Exception ex) {
             log.error("FAILED while isTOTPRedis for username = {}", username, ex);
             return false;
+        }
+    }
+
+    public boolean isNumberInputOTP(String username) {
+        try {
+            String otpRedis = redisTemplate.opsForValue().get("OTP_NUMBER_" + username);
+
+            return StringUtils.isNotBlank(otpRedis) && Integer.parseInt(otpRedis) > 5;
+        } catch (Exception ex) {
+            log.error("FAILED while isNumberInputOTP for username = {}", username, ex);
+            return false;
+        }
+    }
+
+    public void saveNumberInputOTP(String otp, String username) {
+        try {
+            String numberOTPNotCorrect = redisTemplate.opsForValue().get("OTP_NUMBER_" + username);
+
+            int newNumber = 1 + (Objects.nonNull(numberOTPNotCorrect) ? Integer.parseInt(numberOTPNotCorrect) : 0);
+
+            redisTemplate.opsForValue().set("OTP_NUMBER_" + username,
+                    String.valueOf(newNumber),
+                    60,
+                    TimeUnit.SECONDS);
+        } catch (Exception ex) {
+            log.error("FAILED while saveNumberInputOTP for username = {}", username, ex);
         }
     }
 }

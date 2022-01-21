@@ -12,11 +12,17 @@ public class AuthResponse {
     private String username;
     private String email;
     private final List<String> roles;
+    private boolean error;
 
-    public AuthResponse(String accessToken, UserDetailsImpl userDetail, List<String> roles) {
+    public AuthResponse(String accessToken,
+                        UserDetailsImpl userDetail,
+                        List<String> roles,
+                        boolean error
+    ) {
         this.token = accessToken;
         this.username = userDetail.getUsername();
         this.email = userDetail.getEmail();
         this.roles = roles;
+        this.error = error;
     }
 }

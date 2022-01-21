@@ -5,7 +5,6 @@ import lombok.Data;
 import javax.persistence.*;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
@@ -46,6 +45,9 @@ public class User {
 
     @Column(name = "user_balance")
     private BigDecimal balance;
+
+    @Column(name = "user_locked")
+    private Boolean userLocked;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "users_roles",

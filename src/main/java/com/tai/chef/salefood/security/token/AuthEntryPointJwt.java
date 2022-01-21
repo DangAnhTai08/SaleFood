@@ -1,8 +1,7 @@
 package com.tai.chef.salefood.security.token;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tai.chef.salefood.dto.MetaDTO;
-import com.tai.chef.salefood.dto.ResponseMetaData;
+import com.tai.chef.salefood.payload.response.MessageResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -14,21 +13,22 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+import static com.tai.chef.salefood.constant.Constant.IS_ERROR;
+
 @Component
 @Slf4j
 public class AuthEntryPointJwt implements AuthenticationEntryPoint {
 
     @Override
-    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException {
+    public void commence(HttpServletRequest request, HttpServletResponse response,
+                         AuthenticationException authException
+    ) throws IOException {
         log.warn("Unauthorized error: {}", authException.getMessage());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setStatus(response.SC_UNAUTHORIZED);
-
-        ResponseMetaData responseData = new ResponseMetaData();
-        responseData.setMeta(new MetaDTO(HttpStatus.UNAUTHORIZED));
+        response.setStatus(HttpStatus.OK.value());
 
         final ObjectMapper mapper = new ObjectMapper();
-        mapper.writeValue(response.getOutputStream(), responseData);
+        mapper.writeValue(response.getOutputStream(), new MessageResponse("UNAUTHORIZED", IS_ERROR));
     }
 
 }

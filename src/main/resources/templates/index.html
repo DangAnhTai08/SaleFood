@@ -175,25 +175,25 @@
                     </p>
                     <form th:action="@{/singup}">
                         <div class="styled-input agile-styled-input-top">
-                            <input id="iUsername" type="text" placeholder="Name" name="username" required="">
+                            <input id="iUsername" type="text" placeholder="Name" name="username" required>
                         </div>
                         <div class="styled-input">
-                            <input id="iEmail" type="email" placeholder="E-mail" name="email" required="">
+                            <input id="iEmail" type="email" placeholder="E-mail" name="email" required>
                         </div>
                         <div class="styled-input">
-                            <input id="iPhonenumber" type="text" placeholder="Phone" name="phone" required="">
+                            <input id="iPhonenumber" type="text" placeholder="Phone" name="phone" required>
                         </div>
                         <div class="styled-input">
-                            <input id="iAddress" type="text" placeholder="Address" name="address" required="">
+                            <input id="iAddress" type="text" placeholder="Address" name="address" required>
                         </div>
                         <div class="styled-input">
-                            <input type="password" placeholder="Password" name="password" id="password1" required="">
+                            <input type="password" placeholder="Password" name="password" id="password1" required>
                         </div>
                         <div class="styled-input">
                             <input type="password" placeholder="Confirm Password" name="confirmPassword" id="password2"
-                                   required="">
+                                   required>
                         </div>
-                        <button id="signUp">Sign Up</button>
+                        <button id="signUp" disabled>Sign Up</button>
                     </form>
                     <p>
                         <a href="#">By clicking register, I agree to your terms</a>
@@ -1810,7 +1810,7 @@
     <div class="alert alert-success">Login Successful</div>
 </div>
 <div id="notice-failed" class="modal fade" tabindex="-1" role="dialog">
-    <div class="alert alert-danger">Login Failed</div>
+    <div class="alert alert-danger" id="error-mess">Login Failed</div>
 </div>
 
 <div id="notice-regis-success" class="modal fade" tabindex="-1" role="dialog">
@@ -1874,22 +1874,37 @@
                 contentType: "application/json",
                 dataType: 'json',
                 success(res) {
-                    $("#tokenQr").attr("src", "https://zxing.org/w/chart?cht=qr&chs=250x250&chld=" +
-                        "M&choe=UTF-8&chl=otpauth://totp/cheffresh-" + $('#iEmail').val() +
-                        "?secret=" + res.message + "&issuer=" + $('#iUsername').val());
+                    if(!res.error) {
+                        $("#tokenQr").attr("src", "https://zxing.org/w/chart?cht=qr&chs=250x250&chld=" +
+                            "M&choe=UTF-8&chl=otpauth://totp/cheffresh-" + $('#iEmail').val() +
+                            "?secret=" + res.message + "&issuer=" + $('#iUsername').val());
 
-                    $("#tokenValue").text(res.message);
+                        $("#tokenValue").text(res.message);
 
-                    $("#modalRegister").modal('show');
+                        $("#modalRegister").modal('show');
 
-                    // call api login
-                    login($('#iUsername').val(), $('#password1').val());
+                        // call api login
+                        login($('#iUsername').val(), $('#password1').val());
 
-                    // notice
-                    $("#notice-regis-success").modal('show');
-                    setTimeout(() => {
-                        $("#notice-success").modal('hide');
-                    }, 2000)
+                        // notice
+                        $("#notice-regis-success").modal('show');
+                        $("#myModal2").modal('hide');
+                        setTimeout(() => {
+                            $("#notice-success").modal('hide');
+                        }, 2000)
+                        setTimeout(() => {
+                            $("#notice-regis-success").modal('hide');
+                        }, 3000)
+                        setTimeout(() => {
+                            $("#modalRegister").modal('hide');
+                        }, 60000)
+                    } else {
+                        $('#notice-failed').modal('show');
+                        $('#error-mess').text(res.message);
+                        setTimeout(() => {
+                            $('#notice-failed').modal('hide');
+                        }, 4000);
+                    }
                 },
                 error() {
                     $("#notice-regis-failed").modal('show');
@@ -1913,6 +1928,35 @@
                 $("#myModal2").modal('hide');
             }, 200)
         })
+
+        document.getElementById("password1").onkeypress = validatePassword;
+        document.getElementById("password2").onkeypress = validatePassword;
+
+        function validatePassword() {
+            const pass2 = document.getElementById("password2").value;
+            const pass1 = document.getElementById("password1").value;
+            if (pass1 !== pass2)
+                document.getElementById("password2").setCustomValidity("Passwords Don't Match");
+            else
+                document.getElementById("password2").setCustomValidity('');
+            //empty string means no validation error
+        }
+
+        const checkForm = setInterval(() => {
+            if(
+                $('#iUsername').val() !== '' &&
+                $('#iEmail').val() !== '' &&
+                $('#iPhonenumber').val() !== '' &&
+                $('#iAddress').val() !== '' &&
+                $('#password1').val() !== '' &&
+                $('#password2').val() !== '' &&
+                $('#password1').val() ===  $('#password2').val()
+            ) {
+                $('#signUp').attr('disabled', false);
+            } else {
+                $('#signUp').attr('disabled', true);
+            }
+        }, 1000)
     });
 
 </script>
@@ -1998,22 +2042,7 @@
 <!-- //flexisel (for special offers) -->
 
 <!-- password-script -->
-<script>
-    window.onload = function () {
-        document.getElementById("password1").onchange = validatePassword;
-        document.getElementById("password2").onchange = validatePassword;
-    }
 
-    function validatePassword() {
-        var pass2 = document.getElementById("password2").value;
-        var pass1 = document.getElementById("password1").value;
-        if (pass1 !== pass2)
-            document.getElementById("password2").setCustomValidity("Passwords Don't Match");
-        else
-            document.getElementById("password2").setCustomValidity('');
-        //empty string means no validation error
-    }
-</script>
 <!-- //password-script -->
 
 <!-- smoothscroll -->

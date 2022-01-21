@@ -33,6 +33,27 @@ License URL: http://creativecommons.org/licenses/by/3.0/
     <!-- fonts -->
     <link th:href="@{//fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i,800}"
           rel="stylesheet">
+    <link rel="stylesheet" type="text/css" th:href="@{/css/toastr.css}">
+    <style>
+        .loading-indicator {
+            display: block;
+            width: 10px;
+            height: 10px;
+            border-bottom: 2px solid deeppink;
+            border-top: 2px solid deeppink;
+            border-left: 2px solid deeppink;
+            border-right: 2px solid transparent;
+            animation: infinite-roting 4s linear infinite;
+        }
+        @keyframes infinite-roting {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -136,14 +157,15 @@ License URL: http://creativecommons.org/licenses/by/3.0/
                         <a href="#" data-toggle="modal" data-target="#myModal2">
                             Sign Up Now</a>
                     </p>
-                    <form action="#" method="post">
+                    <form>
                         <div class="styled-input agile-styled-input-top">
-                            <input type="text" placeholder="User Name" name="Name" required="">
+                            <input id="loginUsername" type="text" placeholder="User Name" name="Name" required="">
                         </div>
                         <div class="styled-input">
-                            <input type="password" placeholder="Password" name="password" required="">
+                            <input id="loginPassword" type="password" placeholder="Password" name="password"
+                                   required="">
                         </div>
-                        <input type="submit" value="Sign In">
+                        <input id="login" type="submit" value="Sign In">
                     </form>
                     <div class="clearfix"></div>
                 </div>
@@ -943,7 +965,7 @@ License URL: http://creativecommons.org/licenses/by/3.0/
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Verify your token</h5>
+                <h5 class="modal-title">Verify your OTP</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -953,11 +975,11 @@ License URL: http://creativecommons.org/licenses/by/3.0/
                     Provided token could not be recognized
                 </div>
                 <p>
-                    To complete pay you should verify your token generated in Google Authenticator application.
+                    To complete pay you should verify your OTP generated in Google Authenticator application.
                     Please, enter the currently generated token to the field below
                 </p>
                 <div class="text-center">
-                    <input id="authToken" type="text" placeholder="Enter token">
+                    <input id="authToken" type="text" maxlength="6" placeholder="Enter token">
                 </div>
             </div>
             <div class="modal-footer">
@@ -968,10 +990,10 @@ License URL: http://creativecommons.org/licenses/by/3.0/
     </div>
 </div>
 <div id="notice-success" class="modal fade" tabindex="-1" role="dialog">
-    <div class="alert alert-success">Pay Successful, Order done</div>
+    <div class="alert alert-success" id="success-toast">Pay Successful, Order done</div>
 </div>
 <div id="notice-failed" class="modal fade" tabindex="-1" role="dialog">
-    <div class="alert alert-danger">Pay Failed</div>
+    <div class="alert alert-danger" id="error-toast">Pay Failed</div>
 </div>
 <!-- //copyright -->
 
@@ -983,8 +1005,38 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 <!-- popup modal (for signin & signup)-->
 <script th:src="@{/js/jquery.magnific-popup.js}"></script>
 <script>
-    //!jq
+    //!jqCCC
     $(document).ready(function () {
+        const login = (username, password) => {
+            $.ajax({
+                type: 'POST',
+                data: JSON.stringify({
+                    username: username,
+                    password: password
+                }),
+                url: 'http://localhost:8888/api/auth/login',
+                contentType: "application/json",
+                dataType: 'json',
+                success(res) {
+                    localStorage.setItem('token', res.type + ' ' + res.token);
+                    localStorage.setItem('current_username', username);
+                    $("#myModal1").modal('hide');
+                   if(!res.error) {
+                       $("#notice-success").modal('show');
+                       $("#success-toast").text("Login success");
+                       setTimeout(() => {
+                           $("#notice-success").modal('hide');
+                       }, 3000)
+                   } else {
+                       $("#notice-failed").modal('show');
+                       $("#error-toast").text("Login failed, check password or username");
+                       setTimeout(() => {
+                           $("#notice-failed").modal('hide');
+                       }, 3000)
+                   }
+                },
+            })
+        }
         $('.popup-with-zoom-anim').magnificPopup({
             type: 'inline',
             fixedContentPos: false,
@@ -1003,11 +1055,11 @@ License URL: http://creativecommons.org/licenses/by/3.0/
             $("#modalLoginCheckToken").modal('show');
 
             $('#btnTokenVerify').click((e) => {
+                $('#btnTokenVerify').attr('disabled', true);
                 e.preventDefault();
                 $.ajax({
                     type: 'POST',
                     data: JSON.stringify({
-                        login: localStorage.getItem('current_username'),
                         totp: $('#authToken').val(),
                         token: localStorage.getItem('token'),
                         price: localStorage.getItem('totalPrice')
@@ -1019,27 +1071,40 @@ License URL: http://creativecommons.org/licenses/by/3.0/
                     contentType: "application/json",
                     dataType: 'json',
                     success(res) {
-                        if (res.message) {
+                        if (!res.error) {
                             localStorage.setItem('totalPrice', '0');
                             $("#modalLoginCheckToken").modal('hide');
-                            $("#notice-success").modal('show');
-                            setTimeout(() => {
-                                $("#notice-success").modal('hide');
-                            }, 3000)
+
+                            $("#notice-success").modal("show");
+                            $("#success-toast").text(res.message);
+
                             setTimeout(() => {
                                 window.location.replace('http://localhost:8888');
                             }, 4000)
+                        } else {
+                            $("#notice-failed").modal("show");
+                            $("#error-toast").text(res.message);
+                            setTimeout(() => {
+                                $("#notice-failed").modal("hide");
+                            }, 4000)
                         }
+                        $('#btnTokenVerify').attr('disabled', false);
                     },
                     error() {
-                        $("#notice-failed").modal('show');
-                        setTimeout(() => {
-                            $("#notice-failed").modal('hide');
-                        }, 3000)
+                        $('#btnTokenVerify').attr('disabled', false);
                     }
                 })
             })
         })
+        $("#authToken").on('keypress', (event) => {
+            const charCode = (event.which) ? event.which : event.keyCode;
+            return !(charCode > 31 && (charCode < 48 || charCode > 57));
+        });
+        $('#login').click((e) => {
+            e.preventDefault();
+            login($('#loginUsername').val(), $('#loginPassword').val());
+
+        });
     });
 </script>
 <!-- Large modal -->
