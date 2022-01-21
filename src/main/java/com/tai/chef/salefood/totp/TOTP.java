@@ -140,15 +140,9 @@ public class TOTP {
      * {@link truncationDigits} digits
      */
 
-    public static String generateTOTP(String key,
-                                      String time,
-                                      String returnDigits,
-                                      String crypto) {
+    public static String generateTOTP(String key, String time, String returnDigits, String crypto) {
         int codeDigits = Integer.decode(returnDigits);
-
-        // Using the counter
-        // First 8 bytes are for the movingFactor
-        // Compliant with base RFC 4226 (HOTP)
+        // Using the counter, First 8 bytes are for the movingFactor, Compliant with base RFC 4226 (HOTP)
         while (time.length() < 16)
             time = "0" + time;
 
@@ -160,12 +154,8 @@ public class TOTP {
         // put selected bytes into result int
         // take the 4 least significant bits from the encrypted string as an offset
         int offset = hash[hash.length - 1] & 0xf;
-
-        int binary =
-                ((hash[offset] & 0x7f) << 24) |
-                        ((hash[offset + 1] & 0xff) << 16) |
-                        ((hash[offset + 2] & 0xff) << 8) |
-                        (hash[offset + 3] & 0xff);
+        int binary = ((hash[offset] & 0x7f) << 24) | ((hash[offset + 1] & 0xff) << 16) |
+                        ((hash[offset + 2] & 0xff) << 8) | (hash[offset + 3] & 0xff);
 
         // the otp is then the last 6 digits in the number
         int otp = binary % DIGITS_POWER[codeDigits];
